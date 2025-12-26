@@ -51,7 +51,6 @@ export function checkSafetyAndRoute(request: string): RoutedRequest {
                     payload: {},
                 }
             };
-            };
         }
     }
 
