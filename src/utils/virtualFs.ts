@@ -1,161 +1,147 @@
 /**
- * Virtual File System Utilities
+ * Virtual Filesystem Utilities
+ * Provides functionality to apply virtual file artifacts to the filesystem
  * 
- * This module provides utilities for managing virtual file operations,
- * including applying artifacts to write files.
- * 
- * Created: 2025-12-26 07:08:25 UTC
+ * Last Updated: 2025-12-26 07:02:46 UTC
  */
 
+import fs from 'fs';
+import path from 'path';
+
 /**
- * Represents a file artifact to be written to the file system
+ * Represents a virtual file artifact
  */
-interface FileArtifact {
+export interface FileArtifact {
+  /** Path to the file relative to the project root */
   path: string;
+  /** Content of the file */
   content: string;
+  /** Optional: File encoding (default: 'utf-8') */
   encoding?: BufferEncoding;
 }
 
 /**
- * Represents a collection of artifacts to be applied
- */
-interface ArtifactsRecord {
-  [key: string]: FileArtifact | string;
-}
-
-/**
- * Applies artifacts by writing files to the virtual file system
+ * Applies virtual file artifacts to the filesystem
+ * Creates necessary directories and writes files with the provided content
  * 
- * @param artifacts - Record of artifacts to apply, where each value can be either:
- *   - A FileArtifact object with path, content, and optional encoding
- *   - A string representing the file content (path derived from key)
- * @returns Promise<void>
+ * @param artifacts - Array of file artifacts to apply
+ * @param basePath - Base path where files will be written (default: current working directory)
+ * @returns Promise that resolves when all files have been written
+ * @throws Error if file writing fails
  * 
  * @example
  * ```typescript
- * const artifacts = {
- *   'config': {
- *     path: 'src/config.ts',
- *     content: 'export const config = {...}'
+ * const artifacts: FileArtifact[] = [
+ *   {
+ *     path: 'src/index.ts',
+ *     content: 'export const hello = "world";'
  *   },
- *   'readme': 'This is the README content'
- * };
+ *   {
+ *     path: 'README.md',
+ *     content: '# My Project'
+ *   }
+ * ];
  * 
  * await applyArtifacts(artifacts);
  * ```
  */
-export async function applyArtifacts(artifacts: ArtifactsRecord): Promise<void> {
-  if (!artifacts || typeof artifacts !== 'object') {
-    throw new Error('Artifacts must be a valid object');
-  }
-
-  const filesToWrite: Array<{ path: string; content: string; encoding: BufferEncoding }> = [];
-
-  // Process each artifact
-  for (const [key, value] of Object.entries(artifacts)) {
-    let filePath: string;
-    let content: string;
-    let encoding: BufferEncoding = 'utf-8';
-
-    if (typeof value === 'string') {
-      // If value is a string, use it as content and derive path from key
-      filePath = value.startsWith('/') ? value : `./${key}`;
-      content = value;
-    } else if (value && typeof value === 'object' && 'path' in value && 'content' in value) {
-      // If value is a FileArtifact object
-      filePath = (value as FileArtifact).path;
-      content = (value as FileArtifact).content;
-      encoding = (value as FileArtifact).encoding || 'utf-8';
-    } else {
-      console.warn(`Skipping invalid artifact for key: ${key}`);
-      continue;
-    }
-
-    filesToWrite.push({
-      path: filePath,
-      content,
-      encoding,
-    });
-  }
-
-  // Write all files
-  for (const file of filesToWrite) {
-    await writeFile(file.path, file.content, file.encoding);
-  }
-}
-
-/**
- * Writes a single file to the virtual file system
- * 
- * @param path - File path
- * @param content - File content
- * @param encoding - File encoding (default: 'utf-8')
- * @returns Promise<void>
- */
-async function writeFile(
-  path: string,
-  content: string,
-  encoding: BufferEncoding = 'utf-8'
+export async function applyArtifacts(
+  artifacts: FileArtifact[],
+  basePath: string = process.cwd()
 ): Promise<void> {
   try {
-    // Implementation depends on the runtime environment
-    // For Node.js environment:
-    if (typeof window === 'undefined') {
-      const fs = await import('fs').then(m => m.promises);
-      const dir = path.substring(0, path.lastIndexOf('/'));
-      
-      if (dir) {
-        await fs.mkdir(dir, { recursive: true });
+    for (const artifact of artifacts) {
+      const filePath = path.join(basePath, artifact.path);
+      const fileDir = path.dirname(filePath);
+      const encoding = artifact.encoding || 'utf-8';
+
+      // Create directory structure if it doesn't exist
+      if (!fs.existsSync(fileDir)) {
+        fs.mkdirSync(fileDir, { recursive: true });
       }
-      
-      await fs.writeFile(path, content, encoding);
-    } else {
-      // For browser environment, you might use IndexedDB or local storage
-      console.log(`Virtual file write: ${path}`);
+
+      // Write the file to the filesystem
+      fs.writeFileSync(filePath, artifact.content, encoding);
     }
   } catch (error) {
-    throw new Error(`Failed to write file ${path}: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to apply artifacts to filesystem: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
 /**
- * Applies artifacts with error handling and logging
+ * Applies virtual file artifacts to the filesystem asynchronously
+ * Creates necessary directories and writes files with the provided content
  * 
- * @param artifacts - Record of artifacts to apply
- * @param options - Configuration options
- * @returns Promise with result status
+ * @param artifacts - Array of file artifacts to apply
+ * @param basePath - Base path where files will be written (default: current working directory)
+ * @returns Promise that resolves when all files have been written
+ * @throws Error if file writing fails
  */
-export async function applyArtifactsWithLogging(
-  artifacts: ArtifactsRecord,
-  options?: { verbose?: boolean; dryRun?: boolean }
-): Promise<{ success: boolean; filesWritten: number; errors: string[] }> {
-  const errors: string[] = [];
-  let filesWritten = 0;
-
+export async function applyArtifactsAsync(
+  artifacts: FileArtifact[],
+  basePath: string = process.cwd()
+): Promise<void> {
   try {
-    if (options?.verbose) {
-      console.log(`Applying ${Object.keys(artifacts).length} artifacts...`);
-    }
+    const promises = artifacts.map(async (artifact) => {
+      const filePath = path.join(basePath, artifact.path);
+      const fileDir = path.dirname(filePath);
+      const encoding = artifact.encoding || 'utf-8';
 
-    if (!options?.dryRun) {
-      await applyArtifacts(artifacts);
-      filesWritten = Object.keys(artifacts).length;
-    } else if (options?.verbose) {
-      console.log('DRY RUN: No files were actually written');
-      filesWritten = Object.keys(artifacts).length;
-    }
+      // Create directory structure if it doesn't exist
+      await fs.promises.mkdir(fileDir, { recursive: true });
 
-    if (options?.verbose) {
-      console.log(`Successfully wrote ${filesWritten} files`);
-    }
+      // Write the file to the filesystem
+      await fs.promises.writeFile(filePath, artifact.content, encoding);
+    });
 
-    return { success: true, filesWritten, errors };
+    await Promise.all(promises);
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    errors.push(errorMessage);
-    console.error(`Error applying artifacts: ${errorMessage}`);
-    return { success: false, filesWritten, errors };
+    throw new Error(
+      `Failed to apply artifacts to filesystem: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
   }
 }
 
-export type { FileArtifact, ArtifactsRecord };
+/**
+ * Validates file artifacts before applying them to the filesystem
+ * 
+ * @param artifacts - Array of file artifacts to validate
+ * @returns Array of validation errors (empty if valid)
+ */
+export function validateArtifacts(artifacts: FileArtifact[]): string[] {
+  const errors: string[] = [];
+
+  if (!Array.isArray(artifacts)) {
+    errors.push('Artifacts must be an array');
+    return errors;
+  }
+
+  artifacts.forEach((artifact, index) => {
+    if (!artifact.path) {
+      errors.push(`Artifact ${index}: path is required`);
+    }
+    if (typeof artifact.path !== 'string') {
+      errors.push(`Artifact ${index}: path must be a string`);
+    }
+    if (artifact.content === undefined || artifact.content === null) {
+      errors.push(`Artifact ${index}: content is required`);
+    }
+    if (typeof artifact.content !== 'string') {
+      errors.push(`Artifact ${index}: content must be a string`);
+    }
+  });
+
+  return errors;
+}
+
+export default {
+  applyArtifacts,
+  applyArtifactsAsync,
+  validateArtifacts,
+};
