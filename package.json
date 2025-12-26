@@ -1,0 +1,27 @@
+{
+  "name": "hubhomie-cogpt",
+  "version": "0.1.0",
+  "description": "Foundational AI agent with modular TypeScript architecture and rsis808 safety principles.",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "typescript",
+    "copilot",
+    "rsis808"
+  ],
+  "author": "Manus AI",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.16",
+    "ts-node": "^10.9.2"
+  }
+}
