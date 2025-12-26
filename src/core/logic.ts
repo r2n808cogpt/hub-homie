@@ -5,6 +5,10 @@
  */
 
 import { RoutedRequest } from './gatekeeper';
+import { FactoryTask } from './gatekeeper'; // Import FactoryTask
+import { evaluateRsis808 } from '../factory/rsis808/logic'; // Import the deep logic
+import { applyRsis808Ruleset } from '../factory/rsis808/ruleset';
+import { applyRsis808Ruleset } from '../factory/rsis808/ruleset'; // Placeholder for new ruleset integration
 
 export interface LogicDecision {
     action: 'proceed' | 'refuse' | 'clarify';
@@ -25,6 +29,17 @@ export interface LogicDecision {
  * @returns A LogicDecision object.
  */
 export function applyRsis808Logic(routedRequest: RoutedRequest): LogicDecision {
+    // Step 1: Apply pre-routing ruleset from the factory
+    const rulesetDecision = applyRsis808Ruleset(routedRequest.task);
+    if (rulesetDecision.action !== 'proceed') {
+        return rulesetDecision;
+    }
+
+    // Step 2: Apply deep rsis808 logic
+    const deepLogicDecision = evaluateRsis808(routedRequest.task);
+    if (deepLogicDecision.action !== 'proceed') {
+        return deepLogicDecision;
+    }
     if (!routedRequest.isSafe) {
         // Principle 1: Security-First
         return {
@@ -33,31 +48,10 @@ export function applyRsis808Logic(routedRequest: RoutedRequest): LogicDecision {
         };
     }
 
-    // Example: Check for Clarity
-    if (routedRequest.intent === 'general' && routedRequest.sanitizedRequest.length < 10) {
-        // Principle 2: Clarity
-        return {
-            action: 'clarify',
-            reason: 'Request is too vague. Please provide more detail to ensure clarity before proceeding.',
-        };
-    }
-
-    // Example: Enforcing Local Control for 'coding' intent
-    if (routedRequest.intent === 'coding') {
-        // Principle 4: Local Control
-        return {
-            action: 'proceed',
-            reason: 'Proceeding with coding task. The generated code will be presented for your review and local execution.',
-            details: {
-                note: 'Remember to always review and execute generated code in a controlled environment.',
-            }
-        };
-    }
-
-    // Default to proceeding for other safe, clear requests
-    // Principle 3: Simplicity is applied by favoring direct execution when safe and clear.
+    // Principle 4: Local Control is always enforced by the safe-exec module.
+    
     return {
         action: 'proceed',
-        reason: `Request is safe and clear. Proceeding with ${routedRequest.intent} task.`,
+        reason: `Request passed Gatekeeper, Ruleset, and Deep Logic. Delegating to Factory Orchestrator for execution.`,
     };
 }

@@ -1,70 +1,72 @@
-# hubhomie-cogpt: Foundational AI Agent
+# hubhomie-cogpt: The Castle Software Factory
 
 ## Overview
 
-**hubhomie-cogpt** is a foundational, modular AI agent designed to serve as a secure and supportive assistant for software development, documentation generation, and structured workflow management. Inspired by the principles of **Microsoft Copilot's safety guidelines**, this agent is built from the ground up to be a reliable, non-authoritative partner that prioritizes user safety and control.
+**hubhomie-cogpt** has been expanded into the **Castle Software Factory**, a comprehensive, modular system designed to be a secure and supportive partner for software development, documentation, and structured workflow management.
 
-The agent's architecture is designed for modularity, allowing for easy expansion and integration of new generation capabilities.
+The entire architecture is built upon the **rsis808** principles and strictly adheres to **Microsoft Copilot safety guidelines**, ensuring that all generated outputs are operator-safe, security-first, and presented for **Local Control**.
 
 ## Core Principles: The "rsis808" Framework
 
-The decision-making process of \`hubhomie-cogpt\` is governed by the "rsis808" principles, which ensure that all actions are operator-friendly and security-conscious:
+The Castle's decision-making is governed by the four **rsis808** principles:
 
-| Principle | Description | Implementation Focus |
+| Principle | Focus | Enforcement Mechanism |
 | :--- | :--- | :--- |
-| **Security-First** | Always prioritize safety, ethical guidelines, and security over convenience or speed. | Enforced by the \`Gatekeeper\` and \`Logic\` modules. Refuses any request that violates core safety boundaries. |
-| **Clarity** | Ensure the user's request and the agent's proposed action are unambiguous and well-defined. | The \`Logic\` module may request clarification for vague or overly broad prompts. |
-| **Simplicity** | Favor the simplest, most direct, and most maintainable solution or code structure. | Guides the design of generated code and documentation templates. |
-| **Local Control** | The user maintains ultimate control over the final execution of any generated code or workflow. | Generated code is presented for review; the agent will not execute potentially destructive commands autonomously. |
+| **Security-First** | Prioritize safety, ethics, and security over convenience. | Enforced by the Gatekeeper and the layered rsis808 logic (Ruleset + Deep Logic). |
+| **Clarity** | Ensure the request and the proposed action are unambiguous. | Deep Logic evaluates requests for vagueness and may trigger a `clarify` decision. |
+| **Simplicity** | Favor the simplest, most direct, and most maintainable solution. | Deep Logic checks for over-engineering, guiding Generators toward practical SMB solutions. |
+| **Local Control** | The operator maintains ultimate control over final execution. | Enforced by the **Safe-Exec** module, which only presents results for manual review. |
 
-## Architecture and Modules
+## Castle Architecture and Interaction Flow
 
-The agent is structured into four primary, modular components written in TypeScript:
+The system is divided into two main areas: the **Core** (the agent interface) and the **Factory** (the production engine).
 
-### 1. Persona (\`src/core/persona.ts\`)
+### 1. The Core (`src/core/`) - The Agent Interface
 
-This module defines the agent's identity, purpose, and tone. It explicitly lists the **boundaries** and **safety guidelines** that the agent must adhere to, ensuring compliance with standard AI safety protocols.
+The `hubhomie-cogpt` agent acts as the central interface:
 
-### 2. Gatekeeper (\`src/core/gatekeeper.ts\`)
+*   **Persona:** Defines the agent's identity, tone, and non-negotiable safety boundaries.
+*   **Gatekeeper:** Performs the initial safety check and converts the user's natural language request into a structured `FactoryTask`.
+*   **Logic:** Orchestrates the layered `rsis808` evaluation (Ruleset and Deep Logic) to determine if the task is safe and clear enough to proceed.
 
-The first point of contact for any user request. The \`Gatekeeper\` performs two critical functions:
-*   **Initial Safety Check:** Scans the request for immediate violations of the persona's boundaries (e.g., harmful keywords).
-*   **Intent Routing:** Determines the user's primary intent (e.g., \`coding\`, \`writing\`, \`workflow\`) to route the request to the correct internal function.
+### 2. The Factory (`factory/`) - The Production Engine
 
-### 3. Logic (\`src/core/logic.ts\`)
+If the task is approved by the Core Logic, it is routed to the Factory:
 
-The core decision-making engine. The \`Logic\` module applies the **rsis808 principles** to the routed request. It decides whether to:
-*   **Proceed:** The request is safe, clear, and ready for generation.
-*   **Refuse:** The request violates the Security-First principle.
-*   **Clarify:** The request lacks sufficient detail (Clarity principle).
+*   **Orchestrator:** Receives the approved task and manages the execution flow.
+*   **Registry:** Provides the Orchestrator with a dynamic list of all available **Generators** (e.g., `codegen`, `writing`, `service-box`).
+*   **Generators:** The production units that create the final output. The starter generators include:
+    *   `codegen`: Scaffolds, refactors, explanations.
+    *   `writing`: Documentation, summaries, structured content.
+    *   `service-box`: SMB service templates.
+    *   `workspace`: Multi-file project builder.
+    *   `branding`: Themes and naming helpers.
+    *   `recipes`: Repeatable business flows.
+*   **Safe-Exec:** The final step. It takes the Generator's output and formats it for operator review, explicitly preventing autonomous execution to enforce **Local Control**.
 
-### 4. Generator (\`src/generators/generator.ts\`)
+## How to Safely Extend the System
 
-This module houses the functions responsible for creating the final output. It is designed to be easily expanded with new capabilities, such as:
-*   \`generateCode()\`: For creating secure, simple code snippets and project structures.
-*   \`generateDocumentation()\`: For creating clear and comprehensive project documentation (e.g., READMEs, API docs).
-*   *Future Expansion:* Template generation, service scaffolding, etc.
+The modular design allows for easy expansion, provided the safety framework is respected.
 
-## Safety and Limitations
+1.  **Add a New Generator:** Create a new file in `factory/generators/` that implements the `Generator` interface.
+2.  **Register:** Add the new generator to the `GENERATOR_REGISTRY` in `factory/registry.ts`.
+3.  **Integrate Safety:** Update the `factory/rsis808/logic.ts` to include specific clarity or risk checks for your new generator.
 
-**hubhomie-cogpt** is a tool to assist and accelerate development, not a replacement for human judgment.
-
-*   **Non-Authoritative:** The agent will never claim to be a substitute for professional advice (legal, medical, security, etc.).
-*   **No Unsafe Actions:** The agent is hard-coded to refuse any request that violates its core safety boundaries.
-*   **Review Required:** All generated code and proposed workflows **MUST** be reviewed by the user before execution. The agent is designed to support **Local Control**.
+For detailed instructions on adding new modules, see the documentation: `factory/docs/extending-generators.md`.
 
 ## Getting Started
-
-To use and expand this foundational agent:
 
 1.  **Clone the repository:**
     \`\`\`bash
     gh repo clone r2n808cogpt/hub-homie
     cd hub-homie
     \`\`\`
-2.  **Install dependencies** (assuming a Node.js/TypeScript environment):
+2.  **Install dependencies:**
     \`\`\`bash
-    # This step will be added in the next phase
+    pnpm install
     \`\`\`
-3.  **Explore the core logic** in the \`src/core/\` directory to understand the safety and decision-making framework.
-4.  **Expand the Generator** in \`src/generators/generator.ts\` to add new capabilities.
+3.  **Run the example flow:**
+    \`\`\`bash
+    pnpm start
+    \`\`\`
+    This will execute the example in `src/index.ts`, demonstrating the full flow from Gatekeeper to Safe-Exec.
